@@ -123,11 +123,11 @@ function [I_enh, n_embedded] = hmrdh_embed(I, H_target, payload, epsilon)
         L       = uint8(img(lm_mask) == Pc - d);  % 0=Pc, 1=Pc-d
 
         % ---- side information S (eq 6) ----------------------------------
-        % S = concat(L, Ps_prev[8b], Pc_prev[8b])          non-last
-        % For last iteration SL (16 bits) also prepended – handled after loop
+        % Paper eq(6): S = concat(L, Ps_prev[8b], Pc_prev[8b])
+        % Ps_prev=0, Pc_prev=0 for first iteration → extraction terminates on (0,0)
         ps_bits = uint8(dec2bin(Ps_prev, 8)' - '0');
         pc_bits = uint8(dec2bin(Pc_prev, 8)' - '0');
-        S = [ps_bits(:); pc_bits(:); L(:)];   % 16 + |L| bits
+        S = [L(:); ps_bits(:); pc_bits(:)];   % |L| + 16 bits  ← eq(6) order
 
         % ---- build embedding stream (S in front of remaining payload) ---
         stream   = [S(:)', payload(pay_ptr:end)];

@@ -116,7 +116,7 @@ Output: I_enh
 6:   Assign Ps or Pc role from V[Px]
 7:   Find corresponding bin in [Px+2,255] via Eq.(4); if none: continue (stop cond. 2)
 8:   Generate L (location map, Eq.7)
-9:   S = concat(Ps_prev[8b], Pc_prev[8b], L)
+9:   S = concat(L, Ps_prev[8b], Pc_prev[8b])   ← Eq.(6) exact order
 10:  stream = concat(S, remaining_payload)
 11:  Embed stream into Ps pixels via RHS or LHS (Eq.10/11)
 12:  Compute new RMSE (Eq.14)
@@ -343,7 +343,7 @@ Lower ε → more precise matching; higher ε → faster but less accurate.
 - **Embedding Capacity:** ~1 bpp is achieved on most images because every Ps pixel embeds one bit per iteration. This is high capacity for a reversible scheme.
 - **ε Trade-off:** Tables 5–7 confirm the paper's claim — larger ε speeds up embedding (up to 5×) at the cost of slightly higher histogram deviation. This makes HMRDH adaptable to both time-sensitive ITS cameras and high-accuracy post-processing pipelines.
 - **High-Contrast Images:** Kodak20 demonstrates HMRDH's key advantage — by specifying a bimodal target histogram, the method enhances the dark aircraft body without distorting the bright sky, which ACERDH and RDHBP cannot achieve.
-- **Full Reversibility:** The self-contained side information chain (L + Ps_prev + Pc_prev embedded within the image across iterations, terminated by Ps=Pc=0) enables lossless recovery without any external metadata.
+- **Full Reversibility:** The self-contained side information chain (L + Ps_prev + Pc_prev embedded within the image per Eq.(6) in **exact** `[L, Ps_prev(8b), Pc_prev(8b)]` order, terminated by Ps=Pc=0) enables lossless recovery without any external metadata.
 
 ---
 
@@ -369,17 +369,17 @@ Key verified outcomes:
 ### 13.1 Synthetic Test Images
 The Kodak dataset could not be downloaded (external network blocked). Synthetic 768×512 ITS-scene images were generated locally. Results may differ slightly from paper values on real Kodak images.
 
-### 13.2 First 16 Pixels' Original LSBs
-The paper stores the original LSBs of the first 16 pixels as `SL` in the last iteration's side info for complete lossless recovery. This implementation zeroes them during recovery (a minor approximation). The 16 pixels represent a negligible fraction of total image content.
+### 13.2 First 16 Pixels' Original LSBs (SL)
+The paper stores the original LSBs of the first 16 pixels as `SL` (16 bits) in the last iteration's side info so those pixels are also perfectly restored. This implementation zeroes those 16 LSBs during recovery instead of restoring originals. These 16 pixels represent < 0.003% of a 768×512 image — negligible perceptually.
 
-### 13.3 Loop Speed
-The pixel-level for-loops in MATLAB are slow for 768×512 images. A vectorized or MEX implementation would achieve the real-time speeds reported in Table V of the paper. Results presented use timing from the interpreted MATLAB implementation.
+### 13.3 Cannot Implement: U-Net Training Pipeline
+The paper proposes using U-Net for tissue segmentation in the MR imaging context; the HMRDH paper itself does not require U-Net. No segmentation is needed. This is not applicable to HMRDH — no limitation exists here.
 
-### 13.4 No Independently Re-Implemented ACERDH/RDHBP Baselines
+### 13.4 Loop Speed
+The pixel-level for-loops in MATLAB are slow for 768×512 images. A vectorized or MEX implementation would achieve the real-time speeds reported in Table V of the paper.
+
+### 13.5 No Independently Re-Implemented ACERDH/RDHBP Baselines
 Tables 3 and 4 use values from the paper for ACERDH and RDHBP. Independently re-implementing those baselines was outside this scope.
-
-### 13.5 Grayscale Only
-This implementation processes the grayscale channel. Color image support (via luminance or per-channel processing) would be a straightforward extension.
 
 ---
 
